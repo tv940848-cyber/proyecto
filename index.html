@@ -44,6 +44,26 @@ dialog h3{margin:0 0 10px}
 label{display:block;margin:8px 0 3px;font-size:.9rem;color:var(--muted)}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .err{color:var(--alta);margin:8px 0 0;min-height:1.2em;font-size:.9rem}
+.tabs{display:none}
+@media (max-width:760px){
+  main{padding:12px 12px 96px}
+  h1{font-size:1.1rem}
+  .tabs{display:flex;gap:6px;margin-bottom:10px}
+  .tabs button{flex:1;padding:8px 4px;font-size:.8rem;min-height:44px;line-height:1.2}
+  .tabs button.act{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:5;margin:0;flex-wrap:nowrap;background:var(--card);border-top:1px solid var(--bd);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px))}
+  .bar button{flex:1;min-height:46px;font-size:1.15rem;padding:6px}
+  .bar .t{display:none}
+  .search label{width:100%}
+  .search input{max-width:none;flex:1;min-width:0}
+  input,select{font-size:16px;min-height:44px}
+  .col{display:none;min-height:140px}
+  .col.act{display:block}
+  .col h2{display:none}
+  .card{padding:12px}
+  dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:16px 16px 0 0;max-height:92vh;overflow:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+  .acts button{flex:1;min-height:44px}
+}
 </style>
 </head>
 <body>
@@ -52,11 +72,11 @@ label{display:block;margin:8px 0 3px;font-size:.9rem;color:var(--muted)}
   <div id="conexion">Conectando con Firebase…</div>
 
   <div class="bar">
-    <button class="pri" id="bNuevo">➕ Nuevo pedido</button>
-    <button id="bAtras">◀ Mover</button>
-    <button id="bAdelante">Mover ▶</button>
-    <button id="bElim">🗑 Eliminar</button>
-    <button id="bStats">📊 Estadísticas</button>
+    <button class="pri" id="bNuevo" aria-label="Nuevo pedido">➕<span class="t"> Nuevo pedido</span></button>
+    <button id="bAtras" aria-label="Mover a la columna anterior">◀<span class="t"> Mover</span></button>
+    <button id="bAdelante" aria-label="Mover a la columna siguiente"><span class="t">Mover </span>▶</button>
+    <button id="bElim" aria-label="Eliminar pedido">🗑<span class="t"> Eliminar</span></button>
+    <button id="bStats" aria-label="Estadísticas">📊<span class="t"> Estadísticas</span></button>
   </div>
 
   <div class="search">
@@ -65,6 +85,7 @@ label{display:block;margin:8px 0 3px;font-size:.9rem;color:var(--muted)}
     <button id="bLimpiar">Limpiar</button>
   </div>
 
+  <div class="tabs" id="tabs"></div>
   <div class="board" id="board"></div>
   <div id="detalle"></div>
 </main>
@@ -109,7 +130,8 @@ const db = getDatabase(app);
 const refPedidos = ref(db, "pedidos");
 
 const COLUMNAS = ["Pedido recibido", "Preparando", "Enviado"];
-let pedidos = [], sel = null;
+const ETIQ = ["Recibidos", "Preparando", "Enviados"];
+let pedidos = [], sel = null, tab = 0;
 
 const $ = id => document.getElementById(id);
 const obtener = id => pedidos.find(p => p.id === id) || null;
@@ -142,14 +164,20 @@ function render() {
   const q = $("q").value.trim().toLowerCase();
   const board = $("board");
   board.textContent = "";
+  const tabs = $("tabs");
+  tabs.textContent = "";
   const visibles = new Set();
 
   COLUMNAS.forEach(col => {
-    const c = el("section", "col");
+    const c = el("section", "col" + (COLUMNAS.indexOf(col) === tab ? " act" : ""));
     const lista = pedidos.filter(p => p.estado === col && (!q ||
       (p.id + " " + p.cliente + " " + p.producto).toLowerCase().includes(q)));
     const h = el("h2", "", col + " ");
     h.appendChild(el("small", "", "(" + lista.length + ")"));
+    const idx = COLUMNAS.indexOf(col);
+    const tb = el("button", idx === tab ? "act" : "", ETIQ[idx] + " (" + lista.length + ")");
+    tb.onclick = () => { tab = idx; render(); };
+    tabs.appendChild(tb);
     c.appendChild(h);
     if (!lista.length) c.appendChild(el("div", "vacio", "No hay pedidos."));
     lista.forEach(p => {
@@ -209,6 +237,7 @@ async function mover(dir) {
   if (!p) return mensaje("Mover pedido", "Primero selecciona un pedido.");
   const n = COLUMNAS.indexOf(p.estado) + dir;
   if (n < 0 || n >= COLUMNAS.length) return mensaje("Mover pedido", "El pedido ya está en el primer o último estado.");
+  tab = n;
   try { await update(refPedido(p.id), { estado: COLUMNAS[n] }); } catch (e) { falloFirebase(e); }
 }
 
@@ -260,6 +289,7 @@ async function guardarPedido() {
       estado: "Pedido recibido",
       fecha: new Date().toLocaleString("es", { dateStyle: "short", timeStyle: "short" })
     });
+    tab = 0;
     $("dNuevo").close();
   } catch (e) {
     $("fErr").textContent = "No se pudo guardar: " + (e.message || e);

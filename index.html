@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sistema de pedidos · Tienda de ropa</title>
+<style>
+:root{color-scheme:light;--bg:#f4f5f7;--fg:#1d2430;--muted:#5d6675;--card:#fff;--bd:#d3d8df;--acc:#2e86c1;--accfg:#fff;--c0:#fdecea;--c1:#fff6e0;--c2:#e8f6ec;--alta:#c0392b;--media:#a96a00;--baja:#1e8449;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#14181f;--fg:#e8ebf0;--muted:#a0a8b5;--card:#1e242e;--bd:#38404d;--acc:#5aa9dd;--accfg:#0b1118;--c0:#3a2523;--c1:#3a3220;--c2:#1f3427;--alta:#ff7b6b;--media:#f0b254;--baja:#5fd08a}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#14181f;--fg:#e8ebf0;--muted:#a0a8b5;--card:#1e242e;--bd:#38404d;--acc:#5aa9dd;--accfg:#0b1118;--c0:#3a2523;--c1:#3a3220;--c2:#1f3427;--alta:#ff7b6b;--media:#f0b254;--baja:#5fd08a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{max-width:1200px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;text-align:center;margin:4px 0 4px;letter-spacing:.03em}
+#conexion{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:12px}
+#conexion.ok{color:var(--baja)}#conexion.mal{color:var(--alta)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+button,input,select{font:inherit;color:var(--fg)}
+button{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button:disabled{opacity:.6;cursor:default}
+button.pri{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+input,select{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;width:100%}
+.search{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search input{max-width:320px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:760px){.board{grid-template-columns:1fr}}
+.col{border:1px solid var(--bd);border-radius:10px;padding:8px;min-height:240px}
+.col h2{font-size:.95rem;text-align:center;margin:2px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.col small{color:var(--muted);font-weight:400}
+.col:nth-child(1){background:var(--c0)}.col:nth-child(2){background:var(--c1)}.col:nth-child(3){background:var(--c2)}
+.card{display:block;width:100%;text-align:left;margin-bottom:6px;border-left:5px solid var(--muted)}
+.card.sel{outline:2px solid var(--acc)}
+.card.Alta{border-left-color:var(--alta)}.card.Media{border-left-color:var(--media)}.card.Baja{border-left-color:var(--baja)}
+.card b{display:block}.card span{color:var(--muted);font-size:.9rem}
+.vacio{color:var(--muted);text-align:center;font-size:.9rem;padding:14px 0}
+#detalle{margin-top:12px;border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:10px 14px;line-height:1.6}
+#detalle .tag{font-weight:600}
+dialog{background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:12px;padding:18px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 10px}
+label{display:block;margin:8px 0 3px;font-size:.9rem;color:var(--muted)}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.err{color:var(--alta);margin:8px 0 0;min-height:1.2em;font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>SISTEMA DE PEDIDOS Y ENVÍOS DE ROPA</h1>
+  <div id="conexion">Conectando con Firebase…</div>
+
+  <div class="bar">
+    <button class="pri" id="bNuevo">➕ Nuevo pedido</button>
+    <button id="bAtras">◀ Mover</button>
+    <button id="bAdelante">Mover ▶</button>
+    <button id="bElim">🗑 Eliminar</button>
+    <button id="bStats">📊 Estadísticas</button>
+  </div>
+
+  <div class="search">
+    <label for="q" style="margin:0">Buscar pedido, cliente o producto:</label>
+    <input id="q" type="search" autocomplete="off">
+    <button id="bLimpiar">Limpiar</button>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div id="detalle"></div>
+</main>
+
+<dialog id="dNuevo">
+  <h3>Registrar nuevo pedido</h3>
+  <label for="fCliente">Nombre del cliente</label><input id="fCliente">
+  <label for="fProducto">Producto de ropa</label><input id="fProducto">
+  <label for="fTalla">Talla</label><input id="fTalla">
+  <label for="fCantidad">Cantidad</label><input id="fCantidad" type="number" min="1" step="1" inputmode="numeric">
+  <label for="fDir">Dirección de entrega</label><input id="fDir">
+  <label for="fDesc">Descripción (opcional)</label><input id="fDesc">
+  <label for="fPrio">Prioridad</label>
+  <select id="fPrio"><option>Alta</option><option selected>Media</option><option>Baja</option></select>
+  <p class="err" id="fErr"></p>
+  <div class="acts"><button id="fCancel">Cancelar</button><button class="pri" id="fOk">Guardar pedido</button></div>
+</dialog>
+
+<dialog id="dMsg">
+  <h3 id="mTitulo"></h3>
+  <div id="mTexto" style="white-space:pre-line"></div>
+  <div class="acts"><button id="mCancel">Cancelar</button><button class="pri" id="mOk">Aceptar</button></div>
+</dialog>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, remove, runTransaction }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAo9w8szraqqOAYH0ZL0MVDNPFA3E4YBrs",
+  authDomain: "proyecto-5ef22.firebaseapp.com",
+  databaseURL: "https://proyecto-5ef22-default-rtdb.firebaseio.com",
+  projectId: "proyecto-5ef22",
+  storageBucket: "proyecto-5ef22.firebasestorage.app",
+  messagingSenderId: "378158267050",
+  appId: "1:378158267050:web:51d2cc18ab03be34356ed3"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const refPedidos = ref(db, "pedidos");
+
+const COLUMNAS = ["Pedido recibido", "Preparando", "Enviado"];
+let pedidos = [], sel = null;
+
+const $ = id => document.getElementById(id);
+const obtener = id => pedidos.find(p => p.id === id) || null;
+const refPedido = id => ref(db, "pedidos/p" + id);
+
+function el(tag, cls, txt) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (txt !== undefined) n.textContent = txt;
+  return n;
+}
+
+/* ---------- Sincronización en tiempo real ---------- */
+onValue(refPedidos, snap => {
+  pedidos = Object.values(snap.val() || {}).filter(Boolean).sort((a, b) => a.id - b.id);
+  render();
+}, err => {
+  $("conexion").textContent = "Error al leer datos: " + err.message;
+  $("conexion").className = "mal";
+});
+
+onValue(ref(db, ".info/connected"), snap => {
+  const ok = snap.val() === true;
+  $("conexion").textContent = ok ? "● Conectado a Firebase" : "○ Sin conexión con Firebase";
+  $("conexion").className = ok ? "ok" : "mal";
+});
+
+/* ---------- Interfaz ---------- */
+function render() {
+  const q = $("q").value.trim().toLowerCase();
+  const board = $("board");
+  board.textContent = "";
+  const visibles = new Set();
+
+  COLUMNAS.forEach(col => {
+    const c = el("section", "col");
+    const lista = pedidos.filter(p => p.estado === col && (!q ||
+      (p.id + " " + p.cliente + " " + p.producto).toLowerCase().includes(q)));
+    const h = el("h2", "", col + " ");
+    h.appendChild(el("small", "", "(" + lista.length + ")"));
+    c.appendChild(h);
+    if (!lista.length) c.appendChild(el("div", "vacio", "No hay pedidos."));
+    lista.forEach(p => {
+      visibles.add(p.id);
+      const b = el("button", "card " + p.prioridad + (p.id === sel ? " sel" : ""));
+      b.appendChild(el("b", "", "#" + p.id + "  " + p.cliente));
+      b.appendChild(el("span", "", p.producto + " ×" + p.cantidad));
+      b.onclick = () => { sel = p.id; render(); };
+      c.appendChild(b);
+    });
+    board.appendChild(c);
+  });
+
+  if (sel !== null && !visibles.has(sel)) sel = null;
+  detalle(obtener(sel));
+}
+
+function detalle(p) {
+  const d = $("detalle");
+  d.textContent = "";
+  if (!p) { d.textContent = "Selecciona un pedido para ver los detalles."; return; }
+  const filas = [
+    [["PEDIDO N.º", p.id], ["Estado", p.estado]],
+    [["Cliente", p.cliente], ["Producto", p.producto]],
+    [["Talla", p.talla], ["Cantidad", p.cantidad]],
+    [["Dirección de entrega", p.direccion]],
+    [["Prioridad", p.prioridad], ["Fecha", p.fecha]],
+    [["Descripción", p.descripcion || "(sin descripción)"]]
+  ];
+  filas.forEach(f => {
+    const row = el("div");
+    f.forEach((par, i) => {
+      if (i) row.appendChild(document.createTextNode("  |  "));
+      row.appendChild(el("span", "tag", par[0] + ": "));
+      row.appendChild(document.createTextNode(par[1]));
+    });
+    d.appendChild(row);
+  });
+}
+
+function mensaje(titulo, texto, onOk) {
+  $("mTitulo").textContent = titulo;
+  $("mTexto").textContent = texto;
+  $("mCancel").style.display = onOk ? "" : "none";
+  $("mOk").textContent = onOk ? "Sí" : "Aceptar";
+  $("mOk").onclick = () => { $("dMsg").close(); if (onOk) onOk(); };
+  $("mCancel").onclick = () => $("dMsg").close();
+  $("dMsg").showModal();
+}
+
+const falloFirebase = e => mensaje("Error de Firebase",
+  "No se pudo completar la operación.\n" + (e && e.message ? e.message : e));
+
+/* ---------- Acciones ---------- */
+async function mover(dir) {
+  const p = obtener(sel);
+  if (!p) return mensaje("Mover pedido", "Primero selecciona un pedido.");
+  const n = COLUMNAS.indexOf(p.estado) + dir;
+  if (n < 0 || n >= COLUMNAS.length) return mensaje("Mover pedido", "El pedido ya está en el primer o último estado.");
+  try { await update(refPedido(p.id), { estado: COLUMNAS[n] }); } catch (e) { falloFirebase(e); }
+}
+
+function eliminar() {
+  const p = obtener(sel);
+  if (!p) return mensaje("Eliminar pedido", "Primero selecciona un pedido.");
+  mensaje("Eliminar pedido", "¿Eliminar el pedido de " + p.cliente + "?", async () => {
+    try { await remove(refPedido(p.id)); sel = null; } catch (e) { falloFirebase(e); }
+  });
+}
+
+function estadisticas() {
+  const n = e => pedidos.filter(p => p.estado === e).length;
+  const total = pedidos.length, env = n("Enviado");
+  const pct = total ? (env / total * 100) : 0;
+  mensaje("Estadísticas de pedidos",
+    "Total de pedidos: " + total +
+    "\nPedidos recibidos: " + n("Pedido recibido") +
+    "\nPreparando pedidos: " + n("Preparando") +
+    "\nPedidos enviados: " + env +
+    "\nPedidos de prioridad alta: " + pedidos.filter(p => p.prioridad === "Alta").length +
+    "\nPorcentaje enviado: " + pct.toFixed(1) + "%");
+}
+
+function abrirNuevo() {
+  ["fCliente", "fProducto", "fTalla", "fCantidad", "fDir", "fDesc"].forEach(i => $(i).value = "");
+  $("fPrio").value = "Media"; $("fErr").textContent = "";
+  $("dNuevo").showModal(); $("fCliente").focus();
+}
+
+async function guardarPedido() {
+  const v = i => $(i).value.trim();
+  if (!v("fCliente") || !v("fProducto") || !v("fTalla") || !v("fCantidad") || !v("fDir")) {
+    $("fErr").textContent = "Completa todos los campos obligatorios."; return;
+  }
+  const cant = Number(v("fCantidad"));
+  if (!Number.isInteger(cant) || cant <= 0) {
+    $("fErr").textContent = "La cantidad debe ser un número mayor a cero."; return;
+  }
+
+  $("fOk").disabled = true;
+  try {
+    // Contador compartido: evita IDs repetidos si hay varios usuarios a la vez
+    const r = await runTransaction(ref(db, "contador"), c => (c || 0) + 1);
+    const id = r.snapshot.val();
+    await set(refPedido(id), {
+      id, cliente: v("fCliente"), producto: v("fProducto"), talla: v("fTalla"),
+      cantidad: cant, direccion: v("fDir"), descripcion: v("fDesc"), prioridad: $("fPrio").value,
+      estado: "Pedido recibido",
+      fecha: new Date().toLocaleString("es", { dateStyle: "short", timeStyle: "short" })
+    });
+    $("dNuevo").close();
+  } catch (e) {
+    $("fErr").textContent = "No se pudo guardar: " + (e.message || e);
+  } finally {
+    $("fOk").disabled = false;
+  }
+}
+
+$("bNuevo").onclick = abrirNuevo;
+$("bAtras").onclick = () => mover(-1);
+$("bAdelante").onclick = () => mover(1);
+$("bElim").onclick = eliminar;
+$("bStats").onclick = estadisticas;
+$("bLimpiar").onclick = () => { $("q").value = ""; render(); };
+$("q").oninput = render;
+$("fCancel").onclick = () => $("dNuevo").close();
+$("fOk").onclick = guardarPedido;
+render();
+</script>
+</body>
+</html>

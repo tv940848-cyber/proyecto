@@ -13,8 +13,8 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
 main{max-width:1200px;margin:0 auto;padding:16px}
-h1{font-size:1.3rem;text-align:center;margin:4px 0 4px;letter-spacing:.03em}
-#conexion{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:12px}
+h1{font-size:1.3rem;text-align:center;margin:4px 0 14px;letter-spacing:.03em}
+#conexion{font-size:.7em;color:var(--muted);margin-left:8px;vertical-align:middle;cursor:default}
 #conexion.ok{color:var(--baja)}#conexion.mal{color:var(--alta)}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 button,input,select{font:inherit;color:var(--fg)}
@@ -68,8 +68,7 @@ label{display:block;margin:8px 0 3px;font-size:.9rem;color:var(--muted)}
 </head>
 <body>
 <main>
-  <h1>SISTEMA DE PEDIDOS Y ENVÍOS DE ROPA</h1>
-  <div id="conexion">Conectando con Firebase…</div>
+  <h1>SISTEMA DE PEDIDOS Y ENVÍOS DE ROPA<span id="conexion" role="status" title="Conectando con Firebase…" aria-label="Conectando con Firebase…">●</span></h1>
 
   <div class="bar">
     <button class="pri" id="bNuevo" aria-label="Nuevo pedido">➕<span class="t"> Nuevo pedido</span></button>
@@ -149,14 +148,16 @@ onValue(refPedidos, snap => {
   pedidos = Object.values(snap.val() || {}).filter(Boolean).sort((a, b) => a.id - b.id);
   render();
 }, err => {
-  $("conexion").textContent = "Error al leer datos: " + err.message;
-  $("conexion").className = "mal";
+  const c = $("conexion");
+  c.title = c.ariaLabel = "Error al leer datos: " + err.message;
+  c.className = "mal";
 });
 
 onValue(ref(db, ".info/connected"), snap => {
   const ok = snap.val() === true;
-  $("conexion").textContent = ok ? "● Conectado a Firebase" : "○ Sin conexión con Firebase";
-  $("conexion").className = ok ? "ok" : "mal";
+  const c = $("conexion");
+  c.title = c.ariaLabel = ok ? "Conectado a Firebase" : "Sin conexión con Firebase";
+  c.className = ok ? "ok" : "mal";
 });
 
 /* ---------- Interfaz ---------- */

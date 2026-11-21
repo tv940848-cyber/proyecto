@@ -25,13 +25,12 @@ button.pri{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
 input,select{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;width:100%}
 .search{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 .search input{max-width:320px}
-.board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media (max-width:1000px){.board{grid-template-columns:repeat(2,1fr)}}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media (max-width:760px){.board{grid-template-columns:1fr}}
 .col{border:1px solid var(--bd);border-radius:10px;padding:8px;min-height:240px}
 .col h2{font-size:.95rem;text-align:center;margin:2px 0 8px;text-transform:uppercase;letter-spacing:.04em}
 .col small{color:var(--muted);font-weight:400}
-.col:nth-child(1){background:var(--c0)}.col:nth-child(2){background:var(--c1)}.col:nth-child(3){background:var(--c2)}.col:nth-child(4){background:var(--c3)}
+.col:nth-child(1){background:var(--c0)}.col:nth-child(2){background:var(--c1)}.col:nth-child(3){background:var(--c2)}
 .card{display:block;width:100%;text-align:left;margin-bottom:6px;border-left:5px solid var(--muted)}
 .card.sel{outline:2px solid var(--acc)}
 .card.Alta{border-left-color:var(--alta)}.card.Media{border-left-color:var(--media)}.card.Baja{border-left-color:var(--baja)}
@@ -150,8 +149,8 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const refPedidos = ref(db, "pedidos");
 
-const COLUMNAS = ["Pedido recibido", "Preparando", "Enviado", "Entregado"];
-const ETIQ = ["Recibidos", "Preparando", "Enviados", "Entregados"];
+const COLUMNAS = ["Pedido recibido", "Preparando", "Enviado"];
+const ETIQ = ["Recibidos", "Preparando", "Enviados"];
 const RANGO = { Alta: 0, Media: 1, Baja: 2 };
 let pedidos = [], sel = null, tab = 0, editId = null;
 
@@ -300,16 +299,15 @@ function eliminar() {
 
 function estadisticas() {
   const n = e => pedidos.filter(p => p.estado === e).length;
-  const total = pedidos.length, env = n("Enviado"), ent = n("Entregado");
+  const total = pedidos.length, env = n("Enviado");
   const importe = pedidos.reduce((s, p) => s + (Number(p.precio) > 0 ? p.precio * p.cantidad : 0), 0);
   mensaje("Estadísticas de pedidos",
     "Total de pedidos: " + total +
     "\nRecibidos: " + n("Pedido recibido") +
     "\nPreparando: " + n("Preparando") +
     "\nEnviados: " + env +
-    "\nEntregados: " + ent +
     "\nPrioridad alta: " + pedidos.filter(p => p.prioridad === "Alta").length +
-    "\nPorcentaje enviado o entregado: " + (total ? (env + ent) / total * 100 : 0).toFixed(1) + "%" +
+    "\nPorcentaje enviado: " + (total ? env / total * 100 : 0).toFixed(1) + "%" +
     "\nImporte total de pedidos: " + importe.toFixed(2));
 }
 
